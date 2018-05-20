@@ -50,6 +50,9 @@ gitRange = do
     Stdout range <- git "log" $ ["--format=%H"] ++ excludePreStart s  ++ heads
     return $ words range
 
+defaultBranch :: Action String
+defaultBranch = S.defaultBranch <$> liftIO (S.readSettings "gipeda.yaml")
+
 excludePreStart :: S.Settings -> [String]
 excludePreStart s = case S.start s of
     Just hash -> ["^" ++ hash ++ "^@"]
@@ -185,7 +188,8 @@ shakeMain = do
 
     "site/out/head.txt" %> \ out -> do
         alwaysRerun
-        Stdout stdout <- git "rev-parse" ["master"]
+        def <- defaultBranch
+        Stdout stdout <- git "rev-parse" [def]
         writeFileChanged out stdout
 
     "site/out/heads.txt" %> \ out -> do
@@ -197,7 +201,8 @@ shakeMain = do
         branchHashes <- forM branches $ \t -> do
             liftAction $ getGitReference "repository" ("refs/heads/" ++ t)
 
-        masterHash <- liftAction $ getGitReference "repository" "refs/heads/master"
+        def <- defaultBranch
+        masterHash <- liftAction $ getGitReference "repository" ("refs/heads/" ++ def)
 
         let heads = nub $ masterHash : tagHashes ++ branchHashes
         writeFileChanged out $ unlines $ heads
@@ -263,8 +268,9 @@ shakeMain = do
                 writeFileChanged out ""
             Just pattern -> do
                 Stdout branches <- git "branch" ["--list", pattern]
+                def <- defaultBranch
                 branches <- filterM (descendsFromStart s) (map (drop 2) $ lines branches)
-                branches <- filterM (\b -> liftAction $ not <$> isGitAncestor "repository" b "master") branches
+                branches <- filterM (\b -> liftAction $ not <$> isGitAncestor "repository" b def) branches
                 writeFileChanged out (unlines branches)
 
     "graphs" ~> do
@@ -301,7 +307,8 @@ shakeMain = do
 
     "site/out/branches//*.mergebase" %> \out -> do
         let branch = dropDirectory1 (dropDirectory1 (dropDirectory1 (dropExtension out)))
-        mb <- liftAction $ getGitMergeBase "repository" "refs/heads/master" ("refs/heads/"++branch)
+        def <- defaultBranch
+        mb <- liftAction $ getGitMergeBase "repository" ("refs/heads/"++def) ("refs/heads/"++branch)
         writeFile' out mb
 
     "site/out/branches//*.json" %> \out -> do

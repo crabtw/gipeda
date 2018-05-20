@@ -96,6 +96,7 @@ data Settings = Settings
    , revisionInfo :: String
    , diffLink :: Maybe String
    , limitRecent :: Integer
+   , defaultBranch :: String
    , start :: Maybe String
    , interestingTags :: Maybe String
    , interestingBranches :: Maybe String
@@ -108,6 +109,7 @@ instance FromJSON Settings where
                  <*> v .: "revisionInfo"
                  <*> v .: "diffLink"
                  <*> v .: "limitRecent"
+                 <*> v .:? "defaultBranch" .!= "master"
                  <*> v .:? "start"
                  <*> v .:? "interestingTags"
                  <*> v .:? "interestingBranches"
