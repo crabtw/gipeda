@@ -833,7 +833,7 @@ $(function() {
     });
 
     // Load settins, then figure out what view to use.
-    $.get("out/latest.txt", function (latest) {
+    $.get("out/latest.txt", {"_": $.now()}, function (latest) {
         data.latest = latest;
 
         getJSON("out/settings.json", function (settings) {
