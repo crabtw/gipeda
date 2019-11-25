@@ -29,10 +29,6 @@ import JsonUtils
 import EmbeddedFiles
 import ReportTypes
 
-{- Global settings -}
-cGRAPH_HISTORY :: Integer
-cGRAPH_HISTORY = 50
-
 git :: (CmdResult b) => String -> [String] -> Action b
 git gitcmd args = do
     cmdWrap ("git " ++ gitcmd) $ cmd (words "git -C repository" ++ gitcmd : args)
@@ -347,7 +343,8 @@ shakeMain = do
         writeFile' out json
 
     "site/out/latest-summaries.json" %> \out -> do
-        recentCommits <- youngestCommits cGRAPH_HISTORY
+        limitRecent <- getLimitRecent (LimitRecent ())
+        recentCommits <- youngestCommits limitRecent
 
         tags <- readFileLines "site/out/tags.txt"
         tagsHashes <- forM tags $ \t -> do
