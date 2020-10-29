@@ -172,7 +172,7 @@ equalExplanation = ("=", Boring)
 
 explainSmallInt :: S.BenchSettings -> Integer -> Integer -> Explanation
 explainSmallInt _ i1 i2
-    | i2 == i1 = equalExplanation 
+    | i2 == i1 = equalExplanation
     | i2 > i1 = ("+ " ++ show (i2 - i1), Improvement)
     | i2 < i1 = ("- " ++ show (i1 - i2), Regression)
 

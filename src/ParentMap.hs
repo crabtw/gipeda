@@ -15,13 +15,13 @@ ssvFileToMap :: FilePath -> IO ParentMap
 ssvFileToMap fname = ssvToMap <$> BS.readFile fname
 
 ssvToMap :: BS.ByteString -> M.Map Hash Hash
-ssvToMap s = M.fromList 
+ssvToMap s = M.fromList
     [ (k,p)
     | (k,parentList) <- either error V.toList $ decodeWith ssv NoHeader s
     , let parents = splitOn " " parentList
     , p:_ <- return parents
     ]
-    
+
 ssv :: DecodeOptions
 ssv = defaultDecodeOptions {
     decDelimiter = fromIntegral (ord ';')

@@ -22,8 +22,8 @@ here calls the various real main functions, defaulting to the shake tool.
 
 main :: IO ()
 main = do
- 
-    -- Make us locale-independent 
+
+    -- Make us locale-independent
     setLocaleEncoding utf8
 
     args <- getArgs
@@ -33,7 +33,7 @@ main = do
         hPutStr stderr "Please run this from the same directory as the gipeda.yaml file.\n"
 
 
-    case args of 
+    case args of
         "JsonSettings":_      -> jsonSettingsMain
         "Summary":opts        -> summaryMain opts
         "RevReport":opts      -> revReportMain opts

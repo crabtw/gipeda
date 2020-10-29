@@ -129,7 +129,7 @@ putNormal txt = mkAction $ \env -> do
     when (Normal >= verb) $ liftIO $ outputConcurrent $ currentTarget env ++ ": " ++ txt
 
 -- | Wrapper around '%>'
-(%>) :: FilePattern -> (FilePath -> Action ()) -> Rules () 
+(%>) :: FilePattern -> (FilePath -> Action ()) -> Rules ()
 pat %> act = pat S.%> (\out -> wrapAction (act out) out)
 
 (~>) :: String -> Action () -> Rules ()

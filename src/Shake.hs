@@ -7,6 +7,7 @@ import Development.Shake.FilePath
 import Development.Shake.Classes
 import Control.Monad
 import qualified Data.Map as M
+import qualified Data.Set as Set
 import Data.Functor
 import Data.List
 import Data.Maybe
@@ -81,6 +82,13 @@ findRecent logSource m n h = do
     (h:) <$> case pM of
         Nothing -> return []
         Just p ->  findRecent logSource m (n-1) p
+
+findAll :: LogSource -> ParentMap -> FilePath -> Action [FilePath]
+findAll logSource m h = do
+    pM <- findPred logSource m h
+    (h:) <$> case pM of
+        Nothing -> return []
+        Just p ->  findAll logSource m p
 
 descendsFromStart :: S.Settings -> Hash -> Action Bool
 descendsFromStart s hash = case S.start s of
@@ -219,12 +227,16 @@ shakeMain = do
     let pred h = do { hist <- history; findPred logSource hist h }
     let predOrSelf h = do { hist <- history; findPredOrSelf logSource hist h }
     let recent n h = do { hist <- history; findRecent logSource hist n h }
-    let benchmarksInLatest =  do
+    let allCommitsFrom h = do { hist <- history; findAll logSource hist h }
+    let benchmarksAll =  do
             latest' <- readFileLines "site/out/latest.txt"
             case latest' of
                 [latest] -> do
-                    need [resultsOf latest]
-                    liftIO $ benchmarksInCSVFile (resultsOf latest)
+                    commits <- allCommitsFrom latest
+                    bss <- forM commits $ \h -> do
+                                need [resultsOf h]
+                                liftIO $ benchmarksInCSVFile (resultsOf h) >>= return . Set.fromList
+                    return $ Set.toList $ mconcat bss
                 [] -> return []
                 _ -> fail "Broken site/out/latest.txt"
     let youngestCommits n = do
@@ -270,7 +282,7 @@ shakeMain = do
                 writeFileChanged out (unlines branches)
 
     "graphs" ~> do
-        b <- benchmarksInLatest
+        b <- benchmarksAll
         need (map graphFile b)
     want ["graphs"]
 
@@ -352,7 +364,7 @@ shakeMain = do
 
         branches <- readFileLines "site/out/branches.txt"
         branchHashes <- forM branches $ \branch -> do
-            liftAction $ getGitReference "repository" ("refs/heads/" ++ branch) 
+            liftAction $ getGitReference "repository" ("refs/heads/" ++ branch)
 
         need $ map branchSummaryOf branches
         branchesData <- forM branches $ \branch -> do
@@ -381,7 +393,7 @@ shakeMain = do
     want ["site/out/latest-summaries.json"]
 
     "site/out/graph-summaries.json" %> \out -> do
-        b <- benchmarksInLatest
+        b <- benchmarksAll
         need (map graphFile b)
 
         Stdout json <- self "GraphSummaries" b
@@ -389,11 +401,11 @@ shakeMain = do
     want ["site/out/graph-summaries.json"]
 
     "site/out/benchNames.json" %> \out -> do
-        b <- benchmarksInLatest
+        b <- benchmarksAll
 
         need ["gipeda.yaml"]
 
-        Stdout json <- self "BenchNames" (nub b)
+        Stdout json <- self "BenchNames" b
         writeFile' out json
     want ["site/out/benchNames.json"]
 
